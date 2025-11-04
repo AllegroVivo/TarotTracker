@@ -50,3 +50,8 @@ class DatabaseUpdater:
         self._update_record(Models.TarotDeckModel, deck.id, deck.to_dict())
 
 ################################################################################
+    def tarot_card(self, card: TarotCard) -> None:
+
+        self._update_record(Models.TarotCardModel, card.id, card.to_dict())
+
+################################################################################

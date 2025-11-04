@@ -36,3 +36,8 @@ class DatabaseDeleter:
         self._delete_record(Models.TarotDeckModel, deck_id)
 
 ################################################################################
+    def tarot_card(self, card_id: int) -> None:
+
+        self._delete_record(Models.TarotCardModel, card_id)
+
+################################################################################

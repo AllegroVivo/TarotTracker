@@ -32,7 +32,16 @@ class DatabaseInserter:
             db.add(deck)
             db.flush()
             db.refresh(deck)
-
             return TarotDeckSchema.model_validate(deck).model_dump()
+
+################################################################################
+    def tarot_card(self, deck_id: int, name: str) -> Dict[str, Any]:
+
+        with self._parent.get_db() as db:
+            card = TarotCardModel(deck_id=deck_id, name=name)
+            db.add(card)
+            db.flush()
+            db.refresh(card)
+            return TarotCardSchema.model_validate(card).model_dump()
 
 ################################################################################

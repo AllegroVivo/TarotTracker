@@ -22,6 +22,8 @@ class DeckMenuState(BaseState):
 
     async def render(self, controller: MenuController, container: FroggeContainer) -> FroggeContainer:
 
+        from Classes.Common import GenericSelectState
+
         container.add_text(f"## Deck Management")
 
         async def set_name_callback(i: Interaction):
@@ -60,8 +62,9 @@ class DeckMenuState(BaseState):
         container.add_text(f"Cards in Deck: `{len(self.ctx.cards)}`")
 
         async def add_card_callback(i: Interaction):
-            await self.ctx.add_card(i)
-            await controller.redraw(i)
+            from .CardMenuState import CardMenuState
+            new_card = await self.ctx.add_card(i)
+            await controller.transition_to(CardMenuState(new_card), i, replace=True)
 
         container.add_item(
             GenericCallbackButton(
@@ -73,9 +76,25 @@ class DeckMenuState(BaseState):
         )
 
         async def modify_card_callback(i: Interaction, values: List[str], _):
+            from .CardMenuState import CardMenuState
             card = self.ctx[values[0]]
             if card is not None:
                 await controller.transition_to(CardMenuState(card), i, replace=True)
+
+        container.add_item(
+            GenericTransitionButton(
+                GenericSelectState(
+                    header="Select a Card to Modify",
+                    placeholder="Select a Card...",
+                    on_select=modify_card_callback,
+                    options_provider=self.ctx.select_options
+                ),
+                label="Modify",
+                style=ButtonStyle.primary,
+                emoji=BotEmojis.Cycle,
+                disabled=len(self.ctx) == 0
+            )
+        )
 
         return container
 

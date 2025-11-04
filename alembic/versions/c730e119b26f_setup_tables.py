@@ -1,8 +1,8 @@
 """Setup tables
 
-Revision ID: ff70cf46dddf
+Revision ID: c730e119b26f
 Revises: 
-Create Date: 2025-11-03 09:30:06.729194
+Create Date: 2025-11-03 15:12:55.525622
 
 """
 from typing import Sequence, Union
@@ -10,9 +10,10 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
+import Database
 
 # revision identifiers, used by Alembic.
-revision: str = 'ff70cf46dddf'
+revision: str = 'c730e119b26f'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,17 +26,23 @@ def upgrade() -> None:
     sa.Column('name', sa.String(length=200), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
     sa.Column('id', sa.Integer(), nullable=False),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_tarot_decks'))
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_tarot_decks')),
+    sa.UniqueConstraint('name', name=op.f('uq_tarot_decks_name'))
     )
     op.create_table('tarot_cards',
     sa.Column('deck_id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=200), nullable=False),
-    sa.Column('meaning_upright', sa.Text(), nullable=False),
+    sa.Column('arcana', sa.Integer(), nullable=False),
+    sa.Column('suit', sa.Integer(), nullable=True),
+    sa.Column('pip_value', sa.Integer(), nullable=True),
+    sa.Column('meaning_upright', sa.Text(), nullable=True),
     sa.Column('meaning_reversed', sa.Text(), nullable=True),
+    sa.Column('notes', sa.Text(), nullable=True),
     sa.Column('image_url', sa.String(length=500), nullable=True),
     sa.Column('id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['deck_id'], ['tarot_decks.id'], name=op.f('fk_tarot_cards_deck_id_tarot_decks')),
-    sa.PrimaryKeyConstraint('id', name=op.f('pk_tarot_cards'))
+    sa.PrimaryKeyConstraint('id', name=op.f('pk_tarot_cards')),
+    sa.UniqueConstraint('deck_id', 'arcana', 'suit', 'pip_value', name='uq_tarot_deck_identifiers')
     )
     # ### end Alembic commands ###
 

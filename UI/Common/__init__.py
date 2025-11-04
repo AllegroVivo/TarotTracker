@@ -14,14 +14,14 @@ from discord.ui import (
     View
 )
 
+from .BasicTextModal import BasicTextModal
+from .FroggeButton import FroggeButton
+from .FroggeButton import FroggeButton
 from .FroggeContainer import FroggeContainer
-from .FroggeButton import FroggeButton
 from .FroggeMenuView import FroggeMenuView
-from .FroggeButton import FroggeButton
 from .FroggeModal import FroggeModal
+from .FroggeSection import FroggeSection
 from .GenericCallbackButton import GenericCallbackButton
 from .GenericTransitionButton import GenericTransitionButton
 from .InstructionsInfo import InstructionsInfo
-from .FroggeSection import FroggeSection
-from .BasicTextModal import BasicTextModal
 ################################################################################

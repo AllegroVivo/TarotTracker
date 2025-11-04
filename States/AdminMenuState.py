@@ -7,7 +7,6 @@ from discord import Interaction, ButtonStyle
 from Assets import BotEmojis
 from UI.Common import *
 from .BaseState import BaseState
-from .DeckMenuState import DeckMenuState
 
 if TYPE_CHECKING:
     from Classes import MenuController, TarotManager
@@ -33,6 +32,7 @@ class AdminMenuState(BaseState):
         )
 
         async def add_deck_callback(i: Interaction):
+            from .DeckMenuState import DeckMenuState
             new_deck = await self.ctx.decks.add_deck(i)
             await controller.transition_to(DeckMenuState(new_deck), i)
 
@@ -46,6 +46,7 @@ class AdminMenuState(BaseState):
         )
 
         async def modify_deck_callback(i: Interaction, values: List[str], _):
+            from .DeckMenuState import DeckMenuState
             deck = self.ctx.decks[values[0]]
             if deck is not None:
                 await controller.transition_to(DeckMenuState(deck), i, replace=True)
@@ -53,8 +54,8 @@ class AdminMenuState(BaseState):
         container.add_item(
             GenericTransitionButton(
                 GenericSelectState(
-                    description="Select an event to modify.",
-                    placeholder="Select an Event...",
+                    description="Select a deck to modify.",
+                    placeholder="Select a Deck...",
                     options_provider=self.ctx.decks.select_options,
                     on_select=modify_deck_callback,
                 ),

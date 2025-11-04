@@ -2,19 +2,19 @@ from __future__ import annotations
 
 import json
 import re
-
-from datetime import datetime
-from typing import Optional, List
+from enum import IntEnum
+from typing import Optional, List, Type, Any
 
 from sqlalchemy import (
-    TypeDecorator, TEXT, Integer, Boolean, MetaData, BigInteger, String,
-    ForeignKey, DateTime, UniqueConstraint, Text
+    TypeDecorator, TEXT, Integer, Boolean, MetaData, String,
+    ForeignKey, UniqueConstraint, Text, Dialect
 )
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from sqlalchemy.orm import (
     DeclarativeBase, declared_attr, Mapped, mapped_column, relationship
 )
 
+from Enums import *
 from Utilities import Utilities as U
 ################################################################################
 
@@ -106,6 +106,35 @@ class NormalizedBoolean(TypeDecorator):
         return bool(value)
 
 ################################################################################
+class DBEnum(TypeDecorator):
+    """
+    A cross-dialect ENUM type.
+    - Stores IntEnum as INTEGER in the DB and returns IntEnum in Python.
+    """
+    impl = Integer
+    cache_ok = True
+
+    def __init__(self, enum_cls: Type[IntEnum], *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.enum_cls = enum_cls
+
+    def process_bind_param(self, value: Optional[Any], dialect: Dialect):
+        if value is None:
+            return None
+        if isinstance(value, self.enum_cls):
+            return int(value.value)
+        return int(value)
+
+    def process_result_value(self, value: Optional[Any], dialect: Dialect):
+        if value is None:
+            return None
+        return self.enum_cls(int(value))
+
+    @property
+    def python_type(self):
+        return self.enum_cls
+
+################################################################################
 class IDMixin:
     """Base class for models with an integer primary key ID."""
     __abstract__ = True
@@ -130,18 +159,19 @@ class TarotCardModel(BaseModel, IDMixin):
 
     deck_id: Mapped[int] = mapped_column(ForeignKey("tarot_decks.id"), nullable=False)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
-    meaning_upright: Mapped[str] = mapped_column(Text, nullable=False)
+    arcana: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    suit: Mapped[Optional[int]] = mapped_column(Integer)
+    pip_value: Mapped[Optional[int]] = mapped_column(Integer)
+    meaning_upright: Mapped[Optional[str]] = mapped_column(Text)
     meaning_reversed: Mapped[Optional[str]] = mapped_column(Text)
+    notes: Mapped[Optional[str]] = mapped_column(Text)
     image_url: Mapped[Optional[str]] = mapped_column(String(500))
 
     __table_args__ = (
-        UniqueConstraint("deck_id", "name", name="uq_tarot_decks_deck_id_name"),
+        UniqueConstraint("deck_id", "arcana", "suit", "pip_value", name="uq_tarot_deck_identifiers"),
     )
 
     # Relationships
-    deck: Mapped[TarotDeckModel] = relationship(
-        "TarotDeckModel",
-        back_populates="cards"
-    )
+    deck: Mapped[TarotDeckModel] = relationship("TarotDeckModel", back_populates="cards")
 
 ################################################################################

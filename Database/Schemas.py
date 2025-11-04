@@ -31,9 +31,9 @@ class TarotCardSchema(SchemaBase):
     name: Optional[str]
     arcana: Optional[int]
     suit: Optional[int]
-    number: Optional[int]
+    pip_value: Optional[int]
     meaning_upright: Optional[str]
     meaning_reversed: Optional[str]
-    description: Optional[str]
+    notes: Optional[str]
 
 ################################################################################
