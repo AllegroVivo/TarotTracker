@@ -34,7 +34,6 @@ class TarotDeckManager:
     def load_all(self, payload: List[Dict[str, any]]) -> None:
 
         self._decks = [TarotDeck(self, **data) for data in payload]
-        print(self._decks)
 
 ################################################################################
     def __len__(self) -> int:

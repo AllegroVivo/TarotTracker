@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Optional, Union, List, Tuple, Any, Type
 
 from discord import Colour, EmbedField, Embed
 
+from Assets import BotEmojis
 from .Colors import CustomColor
 from .ErrorMessage import ErrorMessage
 
@@ -204,5 +205,24 @@ class Utilities:
             solution=solution,
             description=description
         )
+
+################################################################################
+    @staticmethod
+    def yes_no_emoji(value: Any, _old: bool = False) -> str:
+
+        return str(
+            (BotEmojis.CheckGreen if not _old else BotEmojis.Check)
+            if bool(value)
+            else (BotEmojis.Cross if not _old else BotEmojis.CrossOld)
+        )
+
+################################################################################
+    @staticmethod
+    def string_clamp(text: Optional[str], length: int) -> str:
+
+        if text is None:
+            return "N/A"
+
+        return text[:length - 3] + "..." if len(text) > length else text
 
 ################################################################################

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Optional, Awaitable
 
-from discord import ButtonStyle, Interaction, ActionRow
-from discord.ui import Container, Item, Button
+from discord import ButtonStyle, Interaction, ActionRow as AR
+from discord.ui import Container, Item, Button, ActionRow
 from discord.components import Container as ContainerComponent
 from .FroggeButton import FroggeButton
 
@@ -35,7 +35,7 @@ class FroggeContainer(Container):
         i = 0
         flattened = []
         for c in component.components:
-            if isinstance(c, ActionRow):
+            if isinstance(c, AR):
                 flattened += c.children
             else:
                 flattened.append(c)
@@ -52,9 +52,13 @@ class FroggeContainer(Container):
     def add_navigation_buttons(self, controller: MenuController):
 
         self.add_separator()
-        self.add_item(BackButton(controller))
-        self.add_item(HomeButton(controller))
-        self.add_item(CloseButton(controller))
+        self.add_item(
+            ActionRow(
+                BackButton(controller),
+                HomeButton(controller),
+                CloseButton(controller)
+            )
+        )
 
 ################################################################################
     def add_confirm_cancel_buttons(
@@ -72,8 +76,12 @@ class FroggeContainer(Container):
             async def cancel_callback(i: Interaction):
                 await controller.back(i)
 
-        self.add_item(ConfirmCancelButton(confirm_style, confirm_label, confirm_callback))
-        self.add_item(ConfirmCancelButton(cancel_style, cancel_label, cancel_callback))
+        self.add_item(
+            ActionRow(
+                ConfirmCancelButton(confirm_style, confirm_label, confirm_callback),
+                ConfirmCancelButton(cancel_style, cancel_label, cancel_callback)
+            )
+        )
 
 ################################################################################
 class BackButton(Button):

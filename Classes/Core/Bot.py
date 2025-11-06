@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import logging
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
-from discord import Bot, TextChannel, Interaction
+from discord import Bot, TextChannel, Interaction, Attachment
 
 from Database import Database
 from ..Tarot import TarotManager

@@ -10,6 +10,8 @@ class BotEmojis:
     ArrowDown = PartialEmoji.from_str("⬇️")
     ArrowLeft = PartialEmoji.from_str("⬅️")
     ArrowRight = PartialEmoji.from_str("➡️")
+    ArrowLeftRight = PartialEmoji.from_str("↔️")
+    ArrowUp = PartialEmoji.from_str("⬆️")
     Asterisk = PartialEmoji.from_str("*️⃣")
     Bell = PartialEmoji.from_str("🔔")
     Button = PartialEmoji.from_str("🔘")

@@ -7,7 +7,8 @@ from discord import Interaction
 
 from Classes.Common import DatabaseIdentifiable
 from Enums import ArcanaType, TarotSuit, PipValue
-from UI.Common import BasicTextModal
+from UI.Common import BasicTextModal, FileUploadModal
+from Utilities import Utilities as U
 
 if TYPE_CHECKING:
     from Classes import TarotDeck, TarotTracker
@@ -174,4 +175,160 @@ class TarotCard(DatabaseIdentifiable):
         self.update()
 
 ################################################################################
-    async def
+    async def set_pip_value(self, interaction: Interaction, value: PipValue) -> None:
+
+        existing = self._deck.get_card_by_attributes(
+            suit=self.suit,
+            pip=value,
+            arcana=self.arcana,
+        )
+        if existing is not None:
+            error = U.make_error(
+                title="Invalid Pip Value",
+                message=(
+                    f"A card with the pip value '{value.name}' already exists "
+                    f"for the '{self.suit.proper_name}' suit in this deck."
+                ),
+                solution="Please choose a different pip value or edit the existing card instead."
+            )
+            await interaction.respond(embed=error, ephemeral=True)
+            return
+
+        self.pip_value = value
+        self.update()
+
+################################################################################
+    async def set_suit_value(self, interaction: Interaction, value: TarotSuit) -> None:
+
+        existing = self._deck.get_card_by_attributes(
+            suit=value,
+            pip=self.pip_value,
+            arcana=self.arcana,
+        )
+        if existing is not None:
+            error = U.make_error(
+                title="Invalid Suit",
+                message=(
+                    f"A card with the suit '{value.proper_name}' already exists "
+                    f"for the '{self.pip_value.name}' pip value in this deck."
+                ),
+                solution="Please choose a different suit or edit the existing card instead."
+            )
+            await interaction.respond(embed=error, ephemeral=True)
+            return
+
+        self.suit = value
+        self.update()
+
+################################################################################
+    async def toggle_arcana(self, interaction: Interaction) -> None:
+
+        new_value = ArcanaType.Minor if self.arcana is ArcanaType.Major else ArcanaType.Major
+        existing = self._deck.get_card_by_attributes(
+            suit=self.suit,
+            pip=self.pip_value,
+            arcana=new_value,
+        )
+        if existing is not None:
+            error = U.make_error(
+                title="Invalid Arcana Type",
+                message=(
+                    f"A card with the arcana type '{new_value.name}' already exists "
+                    f"for the '{self.suit.proper_name if self.suit else 'N/A'}' suit "
+                    f"and '{self.pip_value.name if self.pip_value else 'N/A'}' pip value in this deck."
+                ),
+                solution="Please choose a different arcana type or edit the existing card instead."
+            )
+            await interaction.respond(embed=error, ephemeral=True)
+            return
+
+        self.arcana = new_value
+        self.update()
+
+################################################################################
+    async def set_meaning_upright(self, interaction: Interaction) -> None:
+
+        modal = BasicTextModal(
+            title="Set Card Upright Meaning",
+            attribute="Meaning Text",
+            cur_val=self.meaning_upright,
+            example="eg. 'New beginnings, potential, opportunity...'",
+            max_length=1000,
+            multiline=True
+        )
+
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+
+        if not modal.complete:
+            return
+
+        self.meaning_upright = modal.value
+        self.update()
+
+################################################################################
+    async def set_meaning_reversed(self, interaction: Interaction) -> None:
+
+        modal = BasicTextModal(
+            title="Set Card Reversed Meaning",
+            attribute="Meaning Text",
+            cur_val=self.meaning_reversed,
+            example="eg. 'Delays, resistance, lack of progress...'",
+            max_length=1000,
+            multiline=True
+        )
+
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+
+        if not modal.complete:
+            return
+
+        self.meaning_reversed = modal.value
+        self.update()
+
+################################################################################
+    async def set_notes(self, interaction: Interaction) -> None:
+
+        modal = BasicTextModal(
+            title="Set Card Notes",
+            attribute="Notes Text",
+            cur_val=self.notes,
+            example="eg. 'This card is associated with the element of Water...'",
+            max_length=1000,
+            multiline=True
+        )
+
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+
+        if not modal.complete:
+            return
+
+        self.notes = modal.value
+        self.update()
+
+################################################################################
+    async def set_image(self, interaction: Interaction) -> None:
+
+        modal = FileUploadModal(
+            title="Upload Card Image",
+            attribute="Image"
+        )
+
+        await interaction.response.send_modal(modal)
+        await modal.wait()
+
+        if not modal.complete:
+            return
+
+        self.image_url = modal.value.url
+        self.update()
+
+################################################################################
+    def clear_image(self) -> None:
+
+        self.image_url = None
+        self.update()
+
+################################################################################

@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from discord import Interaction
-from discord.ui import View
+from discord.ui import DesignerView
 
 if TYPE_CHECKING:
     from Classes import MenuController
@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 __all__ = ("FroggeMenuView", )
 
 ################################################################################
-class FroggeMenuView(View):
+class FroggeMenuView(DesignerView):
 
     __slots__ = (
         "controller",

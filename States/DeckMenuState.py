@@ -22,7 +22,7 @@ class DeckMenuState(BaseState):
 
     async def render(self, controller: MenuController, container: FroggeContainer) -> FroggeContainer:
 
-        from Classes.Common import GenericSelectState
+        from Classes.Common import GenericSelectState, GenericRemovalState
 
         container.add_text(f"## Deck Management")
 
@@ -66,36 +66,50 @@ class DeckMenuState(BaseState):
             new_card = await self.ctx.add_card(i)
             await controller.transition_to(CardMenuState(new_card), i, replace=True)
 
-        container.add_item(
-            GenericCallbackButton(
-                add_card_callback,
-                label="Add",
-                style=ButtonStyle.success,
-                emoji=BotEmojis.Plus,
-            )
+        add_btn = GenericCallbackButton(
+            add_card_callback,
+            label="Add",
+            style=ButtonStyle.success,
+            emoji=BotEmojis.Plus,
         )
 
         async def modify_card_callback(i: Interaction, values: List[str], _):
             from .CardMenuState import CardMenuState
             card = self.ctx[values[0]]
-            if card is not None:
-                await controller.transition_to(CardMenuState(card), i, replace=True)
+            await controller.transition_to(CardMenuState(card), i, replace=True)
 
-        container.add_item(
-            GenericTransitionButton(
-                GenericSelectState(
-                    header="Select a Card to Modify",
-                    placeholder="Select a Card...",
-                    on_select=modify_card_callback,
-                    options_provider=self.ctx.select_options
-                ),
-                label="Modify",
-                style=ButtonStyle.primary,
-                emoji=BotEmojis.Cycle,
-                disabled=len(self.ctx) == 0
-            )
+        modify_btn = GenericTransitionButton(
+            GenericSelectState(
+                header="Select a Card to Modify",
+                placeholder="Select a Card...",
+                on_select=modify_card_callback,
+                options_provider=self.ctx.select_options
+            ),
+            label="Modify",
+            style=ButtonStyle.primary,
+            emoji=BotEmojis.Cycle,
+            disabled=len(self.ctx) == 0
         )
 
+        async def remove_card_callback(i: Interaction, values: List[str], _):
+            card = self.ctx[values[0]]
+            await controller.transition_to(GenericRemovalState(card), i, replace=True)
+
+        remove_btn = GenericTransitionButton(
+            GenericSelectState(
+                header="Select a Card to Remove",
+                placeholder="Select a Card...",
+                on_select=remove_card_callback,
+                options_provider=self.ctx.select_options
+            ),
+            label="Remove",
+            style=ButtonStyle.danger,
+            emoji=BotEmojis.Trash,
+            disabled=len(self.ctx) == 0
+        )
+
+        row = ActionRow(add_btn, modify_btn, remove_btn)
+        container.add_item(row)
         return container
 
 ################################################################################

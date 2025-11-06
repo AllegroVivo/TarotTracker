@@ -36,13 +36,11 @@ class AdminMenuState(BaseState):
             new_deck = await self.ctx.decks.add_deck(i)
             await controller.transition_to(DeckMenuState(new_deck), i)
 
-        container.add_item(
-            GenericCallbackButton(
-                add_deck_callback,
-                label="Add",
-                style=ButtonStyle.success,
-                emoji=BotEmojis.Plus
-            )
+        add_btn = GenericCallbackButton(
+            add_deck_callback,
+            label="Add",
+            style=ButtonStyle.success,
+            emoji=BotEmojis.Plus
         )
 
         async def modify_deck_callback(i: Interaction, values: List[str], _):
@@ -51,19 +49,17 @@ class AdminMenuState(BaseState):
             if deck is not None:
                 await controller.transition_to(DeckMenuState(deck), i, replace=True)
 
-        container.add_item(
-            GenericTransitionButton(
-                GenericSelectState(
-                    description="Select a deck to modify.",
-                    placeholder="Select a Deck...",
-                    options_provider=self.ctx.decks.select_options,
-                    on_select=modify_deck_callback,
-                ),
-                label="Modify",
-                style=ButtonStyle.primary,
-                emoji=BotEmojis.Cycle,
-                disabled=len(self.ctx.decks) == 0
-            )
+        modify_btn = GenericTransitionButton(
+            GenericSelectState(
+                description="Select a deck to modify.",
+                placeholder="Select a Deck...",
+                options_provider=self.ctx.decks.select_options,
+                on_select=modify_deck_callback,
+            ),
+            label="Modify",
+            style=ButtonStyle.primary,
+            emoji=BotEmojis.Cycle,
+            disabled=len(self.ctx.decks) == 0
         )
 
         async def remove_event_callback(i: Interaction, values: List[str], _):
@@ -71,20 +67,21 @@ class AdminMenuState(BaseState):
             event = self.ctx.decks[values[0]]
             await controller.transition_to(GenericRemovalState(event), i, replace=True)
 
-        container.add_item(
-            GenericTransitionButton(
-                GenericSelectState(
-                    description="Select an event to remove.",
-                    placeholder="Select an Event...",
-                    options_provider=self.ctx.decks.select_options,
-                    on_select=remove_event_callback,
-                ),
-                label="Remove",
-                style=ButtonStyle.danger,
-                emoji=BotEmojis.Trash,
-                disabled=len(self.ctx.decks) == 0
-            )
+        remove_btn = GenericTransitionButton(
+            GenericSelectState(
+                description="Select an event to remove.",
+                placeholder="Select an Event...",
+                options_provider=self.ctx.decks.select_options,
+                on_select=remove_event_callback,
+            ),
+            label="Remove",
+            style=ButtonStyle.danger,
+            emoji=BotEmojis.Trash,
+            disabled=len(self.ctx.decks) == 0
         )
+
+        row = ActionRow(add_btn, modify_btn, remove_btn)
+        container.add_item(row)
 
         return container
 

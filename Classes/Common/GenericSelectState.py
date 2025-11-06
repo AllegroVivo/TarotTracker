@@ -76,16 +76,19 @@ class GenericSelectState(BaseState):
             opts = [SelectOption(label="No Items Available", value="-1")]
 
         if self._select_type != ComponentType.string_select or len(opts) <= min(self._page_size, 25):
-            select = ActionSelect(
-                on_select=self._on_select,
-                placeholder=self._placeholder,
-                options=opts,
-                select_type=self._select_type,
-                channel_types=self._channel_types,
-                max_values=(1 if not self._multi_select else min(len(opts), 25)),
-                disabled=opts[0].value == "-1"
+            container.add_item(
+                ActionRow(
+                    ActionSelect(
+                        on_select=self._on_select,
+                        placeholder=self._placeholder,
+                        options=opts,
+                        select_type=self._select_type,
+                        channel_types=self._channel_types,
+                        max_values=(1 if not self._multi_select else min(len(opts), 25)),
+                        disabled=opts[0].value == "-1"
+                    )
+                )
             )
-            container.add_item(select)
             return container
 
         paged = PaginatedActionSelect(
@@ -99,9 +102,9 @@ class GenericSelectState(BaseState):
         prev_btn = _PrevPage(paged)
         next_btn = _NextPage(paged)
 
-        container.add_item(paged)
-        container.add_item(prev_btn)
-        container.add_item(next_btn)
+        container.add_item(ActionRow(paged))
+        row = ActionRow(prev_btn, next_btn)
+        container.add_item(row)
 
         return container
 

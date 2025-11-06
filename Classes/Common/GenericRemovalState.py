@@ -24,7 +24,7 @@ class GenericRemovalState(BaseState):
     async def render(self, controller: MenuController, container: FroggeContainer) -> FroggeContainer:
 
         async def confirm_callback(i: Interaction):
-            self.ctx.delete(i.user.id)
+            self.ctx.delete()
             await controller.back(i)
 
         container.add_text(f"Are you sure you want to remove the `{U.split_class_name(self.ctx.__class__)}`?")

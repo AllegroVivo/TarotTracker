@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Optional, List, Dict, Any, Union
 from discord import Interaction, SelectOption
 
 from Classes.Common import DatabaseIdentifiable
+from Enums import ArcanaType, PipValue, TarotSuit
 from UI.Common import BasicTextModal
 from .TarotCard import TarotCard
 from Utilities import Utilities as U
@@ -96,6 +97,23 @@ class TarotDeck(DatabaseIdentifiable):
     def get_card_by_name(self, name: str) -> Optional[TarotCard]:
 
         return next((card for card in self.cards if card.name.lower() == name.lower()), None)
+
+################################################################################
+    def get_card_by_attributes(
+        self,
+        *,
+        arcana: ArcanaType,
+        suit: Optional[TarotSuit],
+        pip: Optional[PipValue]
+    ) -> Optional[TarotCard]:
+
+        for card in self.cards:
+            if (
+                (suit and card.suit == suit) and
+                (pip and card.pip_value == pip) and
+                (card.arcana == arcana)
+            ):
+                return card
 
 ################################################################################
     async def set_name(self, interaction: Interaction) -> None:
