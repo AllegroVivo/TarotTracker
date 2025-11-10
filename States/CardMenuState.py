@@ -24,8 +24,8 @@ class CardMenuState(BaseState):
 
     async def render(self, controller: MenuController, container: FroggeContainer) -> FroggeContainer:
 
-        from .CardStatAttributeState import CardStatAttributeState
         from .CardMeaningState import CardMeaningState
+        from .SelectCanonCardState import SelectCanonCardState
 
         container.add_text(f"## Card Management for {self.ctx.deck.name}")
 
@@ -35,7 +35,7 @@ class CardMenuState(BaseState):
 
         container.add_item(
             FroggeSection(
-                TextDisplay(f"Card Name: `{self.ctx.name}`"),
+                TextDisplay(f"__**Card Name:**__ `{self.ctx.name}`"),
                 accessory=GenericCallbackButton(
                     set_name_callback,
                     label="Set",
@@ -44,18 +44,15 @@ class CardMenuState(BaseState):
                 )
             )
         )
-        container.add_separator()
 
         container.add_item(
             FroggeSection(
                 TextDisplay(
-                    "### Stat Tracker Attributes\n"
-                    f"Pip Value: `{self.ctx.pip_value.proper_name if self.ctx.pip_value is not None else 'Not Set'}`\n"
-                    f"Suit: `{self.ctx.suit.proper_name if self.ctx.suit is not None else 'Not Set'}`\n"
-                    f"Arcana: `{self.ctx.arcana.proper_name}`"
+                    f"__**Canon Card:**__"
+                    f"{self.ctx.canonical_card.name if self.ctx.canonical_card else '`Not Set`'}"
                 ),
                 accessory=GenericTransitionButton(
-                    CardStatAttributeState(self.ctx),
+                    SelectCanonCardState(self.ctx),
                     label="Set",
                     style=ButtonStyle.primary,
                     emoji=BotEmojis.Pencil,

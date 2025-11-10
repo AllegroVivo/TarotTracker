@@ -1,40 +1,40 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Optional, Type, TypeVar, Dict, Any
+from typing import TYPE_CHECKING, Optional, Type, TypeVar, Dict, Any, Union, List
 
 from discord import Interaction
 
 from Classes.Common import DatabaseIdentifiable
-from Enums import ArcanaType, TarotSuit, PipValue
+from Enums import ArcanaType, TarotSuit, TarotRank, MajorArcana
 from UI.Common import BasicTextModal, FileUploadModal
 from Utilities import Utilities as U
 
 if TYPE_CHECKING:
-    from Classes import TarotDeck, TarotTracker
+    from Classes import TarotDeck, TarotTracker, CanonicalCard
 ################################################################################
 
 __all__ = ("TarotCard", )
 
 TC = TypeVar("TC", bound="TarotCard")
 
-_PIP_PATTERNS: Dict[PipValue, re.Pattern] = {
-    PipValue.Ace:    re.compile(r"\bace\b", re.I),
-    PipValue.Two:    re.compile(r"\b(?:two|2)\b", re.I),
-    PipValue.Three:  re.compile(r"\b(?:three|3)\b", re.I),
-    PipValue.Four:   re.compile(r"\b(?:four|4)\b", re.I),
-    PipValue.Five:   re.compile(r"\b(?:five|5)\b", re.I),
-    PipValue.Six:    re.compile(r"\b(?:six|6)\b", re.I),
-    PipValue.Seven:  re.compile(r"\b(?:seven|7)\b", re.I),
-    PipValue.Eight:  re.compile(r"\b(?:eight|8)\b", re.I),
-    PipValue.Nine:   re.compile(r"\b(?:nine|9)\b", re.I),
-    PipValue.Ten:    re.compile(r"\b(?:ten|10)\b", re.I),
+_PIP_PATTERNS: Dict[TarotRank, re.Pattern] = {
+    TarotRank.Ace:    re.compile(r"\bace\b", re.I),
+    TarotRank.Two:    re.compile(r"\b(?:two|2)\b", re.I),
+    TarotRank.Three:  re.compile(r"\b(?:three|3)\b", re.I),
+    TarotRank.Four:   re.compile(r"\b(?:four|4)\b", re.I),
+    TarotRank.Five:   re.compile(r"\b(?:five|5)\b", re.I),
+    TarotRank.Six:    re.compile(r"\b(?:six|6)\b", re.I),
+    TarotRank.Seven:  re.compile(r"\b(?:seven|7)\b", re.I),
+    TarotRank.Eight:  re.compile(r"\b(?:eight|8)\b", re.I),
+    TarotRank.Nine:   re.compile(r"\b(?:nine|9)\b", re.I),
+    TarotRank.Ten:    re.compile(r"\b(?:ten|10)\b", re.I),
 
     # Court cards: include common synonyms
-    PipValue.Page:   re.compile(r"\b(?:page|knave)\b", re.I),
-    PipValue.Knight: re.compile(r"\bknight\b", re.I),
-    PipValue.Queen:  re.compile(r"\bqueen\b", re.I),
-    PipValue.King:   re.compile(r"\bking\b", re.I),
+    TarotRank.Page:   re.compile(r"\b(?:page|knave)\b", re.I),
+    TarotRank.Knight: re.compile(r"\bknight\b", re.I),
+    TarotRank.Queen:  re.compile(r"\bqueen\b", re.I),
+    TarotRank.King:   re.compile(r"\bking\b", re.I),
 }
 
 SUIT_SYNONYMS: Dict[TarotSuit, tuple[str, ...]] = {
@@ -55,13 +55,13 @@ class TarotCard(DatabaseIdentifiable):
     __slots__ = (
         "_deck",
         "name",
-        "arcana",
-        "suit",
-        "pip_value",
         "meaning_upright",
         "meaning_reversed",
-        "notes",
+        "upright_keywords",
+        "reversed_keywords",
+        "description",
         "image_url",
+        "canonical_id",
     )
 
 ################################################################################
@@ -72,20 +72,14 @@ class TarotCard(DatabaseIdentifiable):
         self._deck: TarotDeck = parent
 
         self.name: str = kwargs.pop("name")
-        self.arcana: ArcanaType = ArcanaType(kwargs["arcana"])
-        self.suit: Optional[TarotSuit] = (
-            TarotSuit(kwargs["suit"])
-            if kwargs.get("suit") is not None
-            else None
-        )
-        self.pip_value = (
-            PipValue(kwargs["pip_value"])
-            if kwargs.get("pip_value") is not None
-            else None
-        )
+        self.canonical_id: Optional[int] = kwargs.get("canonical_id")
+
         self.meaning_upright: Optional[str] = kwargs.get("meaning_upright")
         self.meaning_reversed: Optional[str] = kwargs.get("meaning_reversed")
-        self.notes: Optional[str] = kwargs.get("notes")
+        self.upright_keywords: List[str] = kwargs.get("upright_keywords")
+        self.reversed_keywords: List[str] = kwargs.get("reversed_keywords")
+
+        self.description: Optional[str] = kwargs.get("description")
         self.image_url: Optional[str] = kwargs.get("image_url")
 
 ################################################################################
@@ -108,6 +102,23 @@ class TarotCard(DatabaseIdentifiable):
         return self._deck
 
 ################################################################################
+    @property
+    def canonical_card(self) -> Optional[CanonicalCard]:
+
+        if self.canonical_id is None:
+            return
+        return self.bot.tarot_manager.get_canonical_card(id=self.canonical_id)
+
+################################################################################
+    @property
+    def proper_name(self) -> str:
+
+        match = self.bot.tarot_manager.get_canonical_card(id=self.canonical_id)
+        if match:
+            return match.name
+        return "Unspecified"
+
+################################################################################
     def update(self) -> None:
 
         self.bot.db.update.tarot_card(self)
@@ -117,12 +128,12 @@ class TarotCard(DatabaseIdentifiable):
 
         return {
             "name": self.name,
-            "arcana": self.arcana.value,
-            "suit": self.suit.value if self.suit is not None else None,
-            "pip_value": self.pip_value.value if self.pip_value is not None else None,
+            "canonical_id": self.canonical_id,
             "meaning_upright": self.meaning_upright,
             "meaning_reversed": self.meaning_reversed,
-            "notes": self.notes,
+            "upright_keywords": self.upright_keywords,
+            "reversed_keywords": self.reversed_keywords,
+            "description": self.description,
             "image_url": self.image_url,
         }
 
@@ -132,27 +143,12 @@ class TarotCard(DatabaseIdentifiable):
         self.bot.db.delete.tarot_card(self.id)
 
 ################################################################################
-    def guess_attributes(self) -> None:
+    def guess_canon_card(self) -> None:
 
-        if not self.name:
-            return
-
-        s = self.name.strip().lower()
-
-        def guess_suit() -> Optional[TarotSuit]:
-            for suit, pat in _SUIT_PATTERNS.items():
-                if pat.search(s):
-                    return suit
-
-        def guess_pip_value() -> Optional[PipValue]:
-            for pip, pat in _PIP_PATTERNS.items():
-                if pat.search(s):
-                    return pip
-
-        self.pip_value = guess_pip_value()
-        self.suit = guess_suit()
-        self.arcana = ArcanaType.Minor if self.pip_value is not None else ArcanaType.Minor
-        self.update()
+        match = self.bot.tarot_manager.get_canonical_card(name=self.name)
+        if match:
+            self.canonical_id = match.id
+            self.update()
 
 ################################################################################
     async def set_name(self, interaction: Interaction) -> None:
@@ -172,77 +168,6 @@ class TarotCard(DatabaseIdentifiable):
             return
 
         self.name = modal.value
-        self.update()
-
-################################################################################
-    async def set_pip_value(self, interaction: Interaction, value: PipValue) -> None:
-
-        existing = self._deck.get_card_by_attributes(
-            suit=self.suit,
-            pip=value,
-            arcana=self.arcana,
-        )
-        if existing is not None:
-            error = U.make_error(
-                title="Invalid Pip Value",
-                message=(
-                    f"A card with the pip value '{value.name}' already exists "
-                    f"for the '{self.suit.proper_name}' suit in this deck."
-                ),
-                solution="Please choose a different pip value or edit the existing card instead."
-            )
-            await interaction.respond(embed=error, ephemeral=True)
-            return
-
-        self.pip_value = value
-        self.update()
-
-################################################################################
-    async def set_suit_value(self, interaction: Interaction, value: TarotSuit) -> None:
-
-        existing = self._deck.get_card_by_attributes(
-            suit=value,
-            pip=self.pip_value,
-            arcana=self.arcana,
-        )
-        if existing is not None:
-            error = U.make_error(
-                title="Invalid Suit",
-                message=(
-                    f"A card with the suit '{value.proper_name}' already exists "
-                    f"for the '{self.pip_value.name}' pip value in this deck."
-                ),
-                solution="Please choose a different suit or edit the existing card instead."
-            )
-            await interaction.respond(embed=error, ephemeral=True)
-            return
-
-        self.suit = value
-        self.update()
-
-################################################################################
-    async def toggle_arcana(self, interaction: Interaction) -> None:
-
-        new_value = ArcanaType.Minor if self.arcana is ArcanaType.Major else ArcanaType.Major
-        existing = self._deck.get_card_by_attributes(
-            suit=self.suit,
-            pip=self.pip_value,
-            arcana=new_value,
-        )
-        if existing is not None:
-            error = U.make_error(
-                title="Invalid Arcana Type",
-                message=(
-                    f"A card with the arcana type '{new_value.name}' already exists "
-                    f"for the '{self.suit.proper_name if self.suit else 'N/A'}' suit "
-                    f"and '{self.pip_value.name if self.pip_value else 'N/A'}' pip value in this deck."
-                ),
-                solution="Please choose a different arcana type or edit the existing card instead."
-            )
-            await interaction.respond(embed=error, ephemeral=True)
-            return
-
-        self.arcana = new_value
         self.update()
 
 ################################################################################
@@ -275,7 +200,8 @@ class TarotCard(DatabaseIdentifiable):
             cur_val=self.meaning_reversed,
             example="eg. 'Delays, resistance, lack of progress...'",
             max_length=1000,
-            multiline=True
+            multiline=True,
+            required=False
         )
 
         await interaction.response.send_modal(modal)
@@ -288,15 +214,16 @@ class TarotCard(DatabaseIdentifiable):
         self.update()
 
 ################################################################################
-    async def set_notes(self, interaction: Interaction) -> None:
+    async def set_description(self, interaction: Interaction) -> None:
 
         modal = BasicTextModal(
             title="Set Card Notes",
             attribute="Notes Text",
-            cur_val=self.notes,
+            cur_val=self.description,
             example="eg. 'This card is associated with the element of Water...'",
             max_length=1000,
-            multiline=True
+            multiline=True,
+            required=False
         )
 
         await interaction.response.send_modal(modal)
@@ -305,7 +232,7 @@ class TarotCard(DatabaseIdentifiable):
         if not modal.complete:
             return
 
-        self.notes = modal.value
+        self.description = modal.value
         self.update()
 
 ################################################################################
@@ -330,5 +257,22 @@ class TarotCard(DatabaseIdentifiable):
 
         self.image_url = None
         self.update()
+
+################################################################################
+    def set_canon_card(self, suit: TarotSuit, value: Union[MajorArcana, TarotRank]) -> None:
+
+        if suit is TarotSuit.Major_Arcana:
+            match = next((
+                cc for cc in self.bot.tarot_manager.canonical_cards
+                if cc.arcana is ArcanaType.Major and cc.major_arcana == value
+            ), None)
+        else:
+            match = next((
+                cc for cc in self.bot.tarot_manager.canonical_cards
+                if cc.arcana is ArcanaType.Minor and cc.suit == suit and cc.rank == value
+            ), None)
+        if match:
+            self.canonical_id = match.id
+            self.update()
 
 ################################################################################

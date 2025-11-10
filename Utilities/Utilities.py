@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional, Union, List, Tuple, Any, Type
+from typing import TYPE_CHECKING, Optional, Union, List, Tuple, Any, Type, Iterable
 
 from discord import Colour, EmbedField, Embed
 
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
     pass
 ################################################################################
 
-__all__ = ("Utilities", )
+__all__ = ("Utilities", "OFFICIAL_CARD_NAMES")
 
 _IRREGULAR_PLURALS = {
     "person": "people",
@@ -218,11 +219,181 @@ class Utilities:
 
 ################################################################################
     @staticmethod
-    def string_clamp(text: Optional[str], length: int) -> str:
+    def string_clamp(text: Optional[str], length: int) -> Optional[str]:
 
         if text is None:
-            return "N/A"
+            return
 
         return text[:length - 3] + "..." if len(text) > length else text
+
+################################################################################
+    @staticmethod
+    def _ac_normalize(s: str) -> str:
+        # Basic normalization for friendlier autocomplete matching
+        s = unicodedata.normalize("NFKD", s).casefold()
+        return "".join(ch for ch in s if not unicodedata.category(ch).startswith("P")).strip()
+
+################################################################################
+    @staticmethod
+    def ac_ranked_match(candidates: Iterable[str], query: str) -> List[str]:
+        """
+        Simple, fast matcher that prefers:
+          1) prefix matches,
+          2) word-boundary matches,
+          3) substring matches,
+          then truncates to 25.
+        """
+        MAX_CHOICES = 25
+
+        if not query:
+            return list(candidates)[:MAX_CHOICES]
+        qn = Utilities._ac_normalize(query)
+
+        def score(name: str) -> Tuple[int, int]:
+            nn = Utilities._ac_normalize(name)
+            if nn.startswith(qn):
+                return 0, len(nn)  # best
+            idx = nn.find(qn)
+            if idx == 0 or (idx > 0 and nn[idx - 1] == " "):
+                return 1, len(nn)  # word-boundary
+            if idx >= 0:
+                return 2, len(nn)  # substring
+            return 9, len(nn)  # no match
+
+        hits = [
+            n
+            for n in candidates
+            if Utilities._ac_normalize(n).find(qn) >= 0 or Utilities._ac_normalize(n).startswith(qn)
+        ]
+        hits.sort(key=score)
+        return hits[:MAX_CHOICES]
+
+################################################################################
+    @staticmethod
+    def is_official_card_name(name: str) -> bool:
+
+        def _flexify(n: str) -> str:
+            """
+            Turn a canonical name into a regex that tolerates:
+              - Case differences using re.IGNORECASE
+              - One or more spaces or hyphens between words
+              - Optional extra whitespace around 'of'
+            Example: "Wheel of Fortune" -> r"Wheel[\\s-]+of[\\s-]+Fortune"
+            """
+            # Escape everything, then turn internal spaces into a [\s-]+ joiner
+            parts = re.split(r"\s+", re.escape(n.strip()))
+            return r"(?:%s)" % r"[\s\-]+".join(parts)
+
+        def _norm(s: str) -> str:
+            # Useful for pre-checking cheap stuff before regex
+            s = unicodedata.normalize("NFKC", s).strip()
+            return s
+
+        # Major Arcana - Generate tolerant alternations from the official list
+        majors = [n for n in OFFICIAL_CARD_NAMES if " of " not in n]
+        # Adding a spelling alias for Judgment because both spellings are common
+        if "Judgement" in majors:
+            majors.append("Judgment")
+
+        majors_alt = "|".join(_flexify(m) for m in majors)
+        majors_re = rf"^(?:{majors_alt})$"
+
+        # Minor Arcana - Accept either word numbers or digits for 2–10.
+        RANK_WORDS = r"(?:Ace|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|Page|Knight|Queen|King)"
+        RANK_DIGITS = r"(?:[2-9]|10)"  # allow 2–10
+        SUITS = r"(?:Cups|Pentacles|Swords|Wands)"
+
+        # Allow flexible joiners between words and optional extra space around 'of'
+        JOIN = r"[\s\-]+"
+        OF = r"\s*of\s*"
+
+        minors_re = rf"^(?:(?:{RANK_WORDS}|{RANK_DIGITS}){JOIN}of{JOIN}{SUITS})$".replace("of", OF)
+
+        # Compile the pattern using majors OR minors
+        TAROT_RE = re.compile(rf"(?:{majors_re}|{minors_re})", re.IGNORECASE)
+        return bool(TAROT_RE.match(_norm(name)))
+
+################################################################################
+
+OFFICIAL_CARD_NAMES = [
+    "Ace of Cups",
+    "Two of Cups",
+    "Three of Cups",
+    "Four of Cups",
+    "Five of Cups",
+    "Six of Cups",
+    "Seven of Cups",
+    "Eight of Cups",
+    "Nine of Cups",
+    "Ten of Cups",
+    "Page of Cups",
+    "Knight of Cups",
+    "Queen of Cups",
+    "King of Cups",
+    "Ace of Pentacles",
+    "Two of Pentacles",
+    "Three of Pentacles",
+    "Four of Pentacles",
+    "Five of Pentacles",
+    "Six of Pentacles",
+    "Seven of Pentacles",
+    "Eight of Pentacles",
+    "Nine of Pentacles",
+    "Ten of Pentacles",
+    "Page of Pentacles",
+    "Knight of Pentacles",
+    "Queen of Pentacles",
+    "King of Pentacles",
+    "Ace of Swords",
+    "Two of Swords",
+    "Three of Swords",
+    "Four of Swords",
+    "Five of Swords",
+    "Six of Swords",
+    "Seven of Swords",
+    "Eight of Swords",
+    "Nine of Swords",
+    "Ten of Swords",
+    "Page of Swords",
+    "Knight of Swords",
+    "Queen of Swords",
+    "King of Swords",
+    "Ace of Wands",
+    "Two of Wands",
+    "Three of Wands",
+    "Four of Wands",
+    "Five of Wands",
+    "Six of Wands",
+    "Seven of Wands",
+    "Eight of Wands",
+    "Nine of Wands",
+    "Ten of Wands",
+    "Page of Wands",
+    "Knight of Wands",
+    "Queen of Wands",
+    "King of Wands",
+    "The Fool",
+    "The Magician",
+    "The High Priestess",
+    "The Empress",
+    "The Emperor",
+    "The Hierophant",
+    "The Lovers",
+    "The Chariot",
+    "Strength",
+    "The Hermit",
+    "Wheel of Fortune",
+    "Justice",
+    "The Hanged Man",
+    "Death",
+    "Temperance",
+    "The Devil",
+    "The Tower",
+    "The Star",
+    "The Moon",
+    "The Sun",
+    "Judgement",
+    "The World"
+]
 
 ################################################################################

@@ -7,7 +7,7 @@ from typing import Optional, List, Type, Any
 
 from sqlalchemy import (
     TypeDecorator, TEXT, Integer, Boolean, MetaData, String,
-    ForeignKey, UniqueConstraint, Text, Dialect
+    ForeignKey, UniqueConstraint, Text, Dialect, Enum as SQLEnum, CheckConstraint
 )
 from sqlalchemy.dialects.postgresql import ARRAY as PG_ARRAY
 from sqlalchemy.orm import (
@@ -157,18 +157,19 @@ class TarotDeckModel(BaseModel, IDMixin):
 ################################################################################
 class TarotCardModel(BaseModel, IDMixin):
 
-    deck_id: Mapped[int] = mapped_column(ForeignKey("tarot_decks.id"), nullable=False)
+    deck_id: Mapped[int] = mapped_column(Integer, ForeignKey("tarot_decks.id", ondelete="CASCADE"), nullable=False)
+    canonical_id: Mapped[Optional[int]] = mapped_column(Integer, index=True)
+
     name: Mapped[str] = mapped_column(String(200), nullable=False)
-    arcana: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    suit: Mapped[Optional[int]] = mapped_column(Integer)
-    pip_value: Mapped[Optional[int]] = mapped_column(Integer)
+    image_url: Mapped[Optional[str]] = mapped_column(String(500))
     meaning_upright: Mapped[Optional[str]] = mapped_column(Text)
     meaning_reversed: Mapped[Optional[str]] = mapped_column(Text)
-    notes: Mapped[Optional[str]] = mapped_column(Text)
-    image_url: Mapped[Optional[str]] = mapped_column(String(500))
+    upright_keywords: Mapped[Optional[str]] = mapped_column(Text)
+    reversed_keywords: Mapped[Optional[str]] = mapped_column(Text)
+    description: Mapped[Optional[str]] = mapped_column(Text)
 
     __table_args__ = (
-        UniqueConstraint("deck_id", "arcana", "suit", "pip_value", name="uq_tarot_deck_identifiers"),
+        UniqueConstraint("deck_id", "name", name="uq_tarot_deck_identifiers"),
     )
 
     # Relationships

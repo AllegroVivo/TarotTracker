@@ -6,7 +6,7 @@ from discord import Interaction, SelectOption, ButtonStyle
 
 from Assets import BotEmojis
 from Classes.Common import GenericSelectState
-from Enums import PipValue, ArcanaType, TarotSuit
+from Enums import TarotRank, ArcanaType, TarotSuit
 from UI.Common import *
 
 from .BaseState import BaseState
@@ -51,7 +51,7 @@ class CardStatAttributeState(BaseState):
         )
 
         async def set_pip_callback(i: Interaction, values: List[str], _):
-            await self.ctx.set_pip_value(i, PipValue(int(values[0])))
+            await self.ctx.set_pip_value(i, TarotRank(int(values[0])))
 
         container.add_item(
             FroggeSection(
@@ -61,7 +61,7 @@ class CardStatAttributeState(BaseState):
                         header="Select the Card's Pip Value",
                         placeholder="Select Pip Value...",
                         on_select=set_pip_callback,
-                        options_provider=PipValue.select_options,
+                        options_provider=TarotRank.select_options,
                     ),
                     label="Set",
                     style=ButtonStyle.primary,

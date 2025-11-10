@@ -28,12 +28,12 @@ class TarotDeckSchema(SchemaBase):
 ################################################################################
 class TarotCardSchema(SchemaBase):
 
+    canonical_id: Optional[int]
     name: Optional[str]
-    arcana: Optional[int]
-    suit: Optional[int]
-    pip_value: Optional[int]
     meaning_upright: Optional[str]
     meaning_reversed: Optional[str]
-    notes: Optional[str]
+    upright_keywords: Optional[str]
+    reversed_keywords: Optional[str]
+    description: Optional[str]
 
 ################################################################################

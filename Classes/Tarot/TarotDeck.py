@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Optional, List, Dict, Any, Union
 from discord import Interaction, SelectOption
 
 from Classes.Common import DatabaseIdentifiable
-from Enums import ArcanaType, PipValue, TarotSuit
+from Enums import ArcanaType, TarotRank, TarotSuit
 from UI.Common import BasicTextModal
 from .TarotCard import TarotCard
 from Utilities import Utilities as U
@@ -104,7 +104,7 @@ class TarotDeck(DatabaseIdentifiable):
         *,
         arcana: ArcanaType,
         suit: Optional[TarotSuit],
-        pip: Optional[PipValue]
+        pip: Optional[TarotRank]
     ) -> Optional[TarotCard]:
 
         for card in self.cards:
@@ -184,7 +184,7 @@ class TarotDeck(DatabaseIdentifiable):
 
         new_card = TarotCard.new(self, modal.value)
         self.cards.append(new_card)
-        new_card.guess_attributes()
+        new_card.guess_canon_card()
         return new_card
 
 ################################################################################

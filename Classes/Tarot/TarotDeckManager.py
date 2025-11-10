@@ -108,3 +108,8 @@ class TarotDeckManager:
         return deck
 
 ################################################################################
+    def get(self, name: str) -> Optional[TarotDeck]:
+
+        return next((deck for deck in self._decks if deck.name.lower() == name.lower()), None)
+
+################################################################################
